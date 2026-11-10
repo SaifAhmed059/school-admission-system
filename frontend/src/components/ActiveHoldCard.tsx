@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Timer, CheckCircle, XCircle, CreditCard, Clock, School } from 'lucide-react';
+import { Timer, CheckCircle, XCircle, CreditCard, Clock, School, Printer } from 'lucide-react';
 import { HoldItem } from '../types';
 
 interface ActiveHoldCardProps {
   hold: HoldItem;
   onConfirm: (holdId: string) => Promise<void>;
   onCancel: (holdId: string) => Promise<void>;
+  onViewReceipt?: (hold: HoldItem) => void;
   isProcessing: boolean;
 }
 
@@ -13,6 +14,7 @@ export const ActiveHoldCard: React.FC<ActiveHoldCardProps> = ({
   hold,
   onConfirm,
   onCancel,
+  onViewReceipt,
   isProcessing
 }) => {
   const [secondsRemaining, setSecondsRemaining] = useState<number>(() => {
@@ -159,9 +161,21 @@ export const ActiveHoldCard: React.FC<ActiveHoldCardProps> = ({
           )}
 
           {effectiveStatus === 'CONFIRMED' && (
-            <div className="text-sm font-medium text-emerald-300 flex items-center gap-2">
-              <CheckCircle className="w-5 h-5" />
-              আপনার ভর্তি সফলভাবে নিশ্চিত হয়েছে!
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="text-sm font-medium text-emerald-300 flex items-center gap-2">
+                <CheckCircle className="w-5 h-5" />
+                আপনার ভর্তি সফলভাবে নিশ্চিত হয়েছে!
+              </div>
+              {onViewReceipt && (
+                <button
+                  type="button"
+                  onClick={() => onViewReceipt(hold)}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md transition-all"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  ভর্তি রশিদ প্রিন্ট করুন
+                </button>
+              )}
             </div>
           )}
 

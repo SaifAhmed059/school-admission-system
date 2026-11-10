@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, Clock, CheckCircle2, XCircle, AlertCircle, RefreshCw } from 'lucide-react';
+import { FileText, Clock, CheckCircle2, XCircle, AlertCircle, RefreshCw, Printer } from 'lucide-react';
 import { HoldItem } from '../types';
 
 interface MyApplicationsProps {
@@ -7,14 +7,15 @@ interface MyApplicationsProps {
   studentId: string;
   onRefresh: () => Promise<void>;
   isRefreshing: boolean;
-  onSelectHold?: (hold: HoldItem) => void;
+  onViewReceipt?: (hold: HoldItem) => void;
 }
 
 export const MyApplications: React.FC<MyApplicationsProps> = ({
   holds,
   studentId,
   onRefresh,
-  isRefreshing
+  isRefreshing,
+  onViewReceipt
 }) => {
   const isStudentIdValid = studentId.replace(/\D/g, '').length === 17;
 
@@ -65,6 +66,7 @@ export const MyApplications: React.FC<MyApplicationsProps> = ({
                 <th className="py-3 px-3">আবেদন আইডি</th>
                 <th className="py-3 px-3">অবস্থা</th>
                 <th className="py-3 px-3">মেয়াদ / তারিখ</th>
+                <th className="py-3 px-3 text-right">রশিদ</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -111,6 +113,20 @@ export const MyApplications: React.FC<MyApplicationsProps> = ({
                         dateStyle: 'medium',
                         timeStyle: 'short'
                       })}
+                    </td>
+                    <td className="py-3.5 px-3 text-right">
+                      {effectiveStatus === 'CONFIRMED' && onViewReceipt ? (
+                        <button
+                          type="button"
+                          onClick={() => onViewReceipt(hold)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-colors"
+                        >
+                          <Printer className="w-3 h-3" />
+                          রশিদ
+                        </button>
+                      ) : (
+                        <span className="text-slate-300 text-xs">-</span>
+                      )}
                     </td>
                   </tr>
                 );

@@ -107,6 +107,14 @@ app.UseSwaggerUI(c =>
 app.UseCors("AllowAll");
 app.MapControllers();
 
+// Health check endpoint for container probes and monitoring
+app.MapGet("/health", () => Results.Ok(new 
+{ 
+    status = "Healthy", 
+    service = "SchoolAdmission.Api", 
+    timestamp = DateTimeOffset.UtcNow 
+}));
+
 app.Run();
 
 public partial class Program { }

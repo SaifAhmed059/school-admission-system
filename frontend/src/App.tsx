@@ -7,6 +7,7 @@ import { ActiveHoldCard } from './components/ActiveHoldCard';
 import { ClassList } from './components/ClassList';
 import { MyApplications } from './components/MyApplications';
 import { CreateClassModal } from './components/CreateClassModal';
+import { AdmissionReceiptModal } from './components/AdmissionReceiptModal';
 import { Toast, ToastMessage } from './components/Toast';
 
 const STORAGE_STUDENT_ID_KEY = 'admission_student_id';
@@ -33,7 +34,11 @@ export function App() {
   const [isCreatingClass, setIsCreatingClass] = useState<boolean>(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
-  // 3. Toasts
+  // 3. Admission Receipt Modal State
+  const [receiptHold, setReceiptHold] = useState<HoldItem | null>(null);
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState<boolean>(false);
+
+  // 4. Toasts
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const addToast = useCallback((type: 'success' | 'error', text: string) => {
     const id = `${Date.now()}-${Math.random()}`;
@@ -47,7 +52,7 @@ export function App() {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
-  // 4. Fetch Classes
+  // 5. Fetch Classes
   const fetchClasses = useCallback(async (quiet = false) => {
     if (!quiet) setIsLoadingClasses(true);
     try {
@@ -63,7 +68,7 @@ export function App() {
     }
   }, []);
 
-  // 5. Fetch My Holds
+  // 6. Fetch My Holds
   const fetchMyHolds = useCallback(async () => {
     const validStudentId = studentId.replace(/\D/g, '');
     if (validStudentId.length !== 17) {
@@ -77,7 +82,7 @@ export function App() {
       setMyHolds(holds);
     } catch (err: unknown) {
       if (err instanceof ApiError) {
-        // quiet fail on background polling, or show if explicit
+        // quiet fail on background polling
       }
     } finally {
       setIsRefreshingHolds(false);
@@ -114,7 +119,7 @@ export function App() {
     });
   }, [myHolds]);
 
-  // 6. Handle Seat Hold (Apply)
+  // 7. Handle Seat Hold (Apply)
   const handleApply = async (classId: string) => {
     const validStudentId = studentId.replace(/\D/g, '');
     if (validStudentId.length !== 17) {
@@ -126,7 +131,6 @@ export function App() {
     try {
       await api.holdSeat(classId, validStudentId);
       addToast('success', 'আসন সাময়িকভাবে বুকিং (HELD) করা হয়েছে! নির্ধারিত সময়ের মধ্যে ভর্তি ফি প্রদান করুন।');
-      // Immediately refresh list & holds
       await Promise.all([fetchClasses(true), fetchMyHolds()]);
     } catch (err: unknown) {
       if (err instanceof ApiError) {
@@ -139,7 +143,7 @@ export function App() {
     }
   };
 
-  // 7. Handle Payment / Confirm Admission
+  // 8. Handle Payment / Confirm Admission
   const handleConfirmAdmission = async (holdId: string) => {
     const validStudentId = studentId.replace(/\D/g, '');
     if (validStudentId.length !== 17) {
@@ -152,6 +156,13 @@ export function App() {
       await api.confirmAdmission(holdId, validStudentId);
       addToast('success', 'অভিনন্দন! ভর্তি ফি সফলভাবে গৃহীত হয়েছে এবং ভর্তি নিশ্চিত করা হয়েছে।');
       await Promise.all([fetchClasses(true), fetchMyHolds()]);
+
+      // Automatically find and open receipt for convenience
+      const confirmedHold = myHolds.find((h) => h.holdId === holdId);
+      if (confirmedHold) {
+        setReceiptHold({ ...confirmedHold, status: 'CONFIRMED' });
+        setIsReceiptModalOpen(true);
+      }
     } catch (err: unknown) {
       if (err instanceof ApiError) {
         addToast('error', err.message);
@@ -163,7 +174,7 @@ export function App() {
     }
   };
 
-  // 8. Handle Hold Cancel
+  // 9. Handle Hold Cancel
   const handleCancelHold = async (holdId: string) => {
     const validStudentId = studentId.replace(/\D/g, '');
     if (!window.confirm('আপনি কি নিশ্চিতভাবে এই আসন বুকিং বাতিল করতে চান?')) {
@@ -186,7 +197,13 @@ export function App() {
     }
   };
 
-  // 9. Handle Create Class (Admin)
+  // 10. Handle View Receipt
+  const handleViewReceipt = (hold: HoldItem) => {
+    setReceiptHold(hold);
+    setIsReceiptModalOpen(true);
+  };
+
+  // 11. Handle Create Class (Admin)
   const handleCreateClass = async (payload: CreateClassPayload) => {
     setIsCreatingClass(true);
     try {
@@ -270,6 +287,7 @@ export function App() {
             hold={activeHold}
             onConfirm={handleConfirmAdmission}
             onCancel={handleCancelHold}
+            onViewReceipt={handleViewReceipt}
             isProcessing={isProcessingPayment}
           />
         )}
@@ -289,6 +307,7 @@ export function App() {
           holds={myHolds}
           studentId={studentId}
           onRefresh={fetchMyHolds}
+          onViewReceipt={handleViewReceipt}
           isRefreshing={isRefreshingHolds}
         />
       </main>
@@ -306,6 +325,14 @@ export function App() {
         onClose={() => setIsCreateModalOpen(false)}
         onSubmit={handleCreateClass}
         isSubmitting={isCreatingClass}
+      />
+
+      {/* Admission Receipt Modal */}
+      <AdmissionReceiptModal
+        isOpen={isReceiptModalOpen}
+        onClose={() => setIsReceiptModalOpen(false)}
+        hold={receiptHold}
+        studentId={studentId}
       />
 
       {/* Toast Notifications */}

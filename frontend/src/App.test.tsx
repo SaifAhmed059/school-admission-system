@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import App from './App';
 import { StudentIdBar } from './components/StudentIdBar';
 import { ActiveHoldCard } from './components/ActiveHoldCard';
+import { AdmissionReceiptModal } from './components/AdmissionReceiptModal';
 import { HoldItem } from './types';
 
 // Mock fetch globally
@@ -80,7 +81,6 @@ describe('School Admission Frontend Tests', () => {
     );
 
     expect(screen.getByText(/মেয়াদ শেষ \(EXPIRED\)/i)).toBeInTheDocument();
-    // Confirm button should not be present or should be disabled
     expect(screen.queryByText(/ভর্তি ফি দিন/i)).not.toBeInTheDocument();
   });
 
@@ -104,5 +104,29 @@ describe('School Admission Frontend Tests', () => {
 
     expect(screen.getByText(/আসন সাময়িক সংরক্ষিত \(HELD\)/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /ভর্তি ফি দিন/i })).toBeInTheDocument();
+  });
+
+  it('renders admission confirmation receipt modal with student and class details', () => {
+    const confirmedHold: HoldItem = {
+      holdId: 'h_conf_123',
+      classId: 'c_1',
+      className: 'Class 6 - Morning Shift',
+      status: 'CONFIRMED',
+      expiresAt: new Date(Date.now() + 300000).toISOString()
+    };
+
+    render(
+      <AdmissionReceiptModal
+        isOpen={true}
+        onClose={vi.fn()}
+        hold={confirmedHold}
+        studentId="20152691234567890"
+      />
+    );
+
+    expect(screen.getByText(/ভর্তি নিশ্চিতকরণ রশিদ/i)).toBeInTheDocument();
+    expect(screen.getByText(/20152691234567890/)).toBeInTheDocument();
+    expect(screen.getByText(/h_conf_123/)).toBeInTheDocument();
+    expect(screen.getByText(/রশিদ প্রিন্ট \/ PDF সংরক্ষণ/i)).toBeInTheDocument();
   });
 });
